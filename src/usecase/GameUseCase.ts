@@ -53,6 +53,27 @@ export class GameUseCase {
         }
     }
 
+    getLatestRecord() {
+        const MJM_ID = PropertiesService.getScriptProperties().getProperty("MJM_ID");
+        const PASSWORD = PropertiesService.getScriptProperties().getProperty("PASSWORD");
+        const cookie = UrlFetchApp.fetch( "https://pl.sega-mj.com/players/MjmidLogin", {
+            method: "post",
+            payload: `mjm_id=${MJM_ID}&password=${PASSWORD}&platform=2`,
+            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
+        }).getHeaders()["Set-Cookie"]
+        const historyRes = UrlFetchApp.fetch("https://pl.sega-mj.com/playdata_view/showHistory",
+            {
+                method: "get",
+                headers: {
+                    "Cookie": cookie
+                }
+            })
+        const html = historyRes.getContentText();
+        const parse = Parser.data(html)
+        const text: string = parse.from('<div class="body">').to('</div>').build()
+        return text
+    }
+
     private getRank(numbers: number[], currentNumber: number): number | null  {
         const uniqueSortedNumbers = numbers.sort((a, b) => b - a);
         const rank = uniqueSortedNumbers.indexOf(currentNumber);
@@ -68,4 +89,8 @@ export type SaveGameInput = {
 
 export type GetTodayTotalOutput = {
     values: {nickName: string, totalScore: number}[]
+}
+
+declare class Parser {
+    public static data(html: string)
 }

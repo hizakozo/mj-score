@@ -24,7 +24,6 @@ export class GameRepositoryImpl implements GameRepository {
                 const scores = new Scores(
                     scoreRecord.filter(scoreRecord => scoreRecord.game_id === gameRecord.game_id).map(score => new Score(score.nick_name, score.score, score.rank))
                 )
-                console.log(scores, "scores")
                 return new Game(gameRecord.game_id, gameRecord.game_date, Number(gameRecord.game_index), scores)
             })
         )

@@ -17,14 +17,23 @@ export class GameController {
             return `${acc}\n${curr.nickName}: ${Math.floor(curr.totalScore * 10) / 10}`
         }, "🀄合計🀄️")
     }
+
+    saveLatestRecord() {
+        const text = this.useCase.getLatestRecord()
+        const replace = text.replace(/<\/?span[^>]*>/g, '');
+        const input: SaveGameInput = parseMessage(replace)
+        this.useCase.saveGame(input)
+        return replace.replace(/\s+/g, '') + "\nを登録しました。"
+    }
 }
 
 const parseMessage = (message: string): SaveGameInput => {
-    const scorePattern = /『(.*?)』 \(([-+]?[\d.]+)\)/g;
+    const replacedMessage = message.replace(/\s+/g, '')
+    const scorePattern = /『(.*?)』\(([-+]?[\d.]+)\)/g;
     const scores: SaveGameInput["scores"] = [];
 
     let match: RegExpExecArray | null;
-    while (match = scorePattern.exec(message)) {
+    while (match = scorePattern.exec(replacedMessage)) {
         scores.push({
             nickName: match[1],
             score: parseFloat(match[2])

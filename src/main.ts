@@ -57,10 +57,12 @@ const route = (messageText: string): string => {
     if (messageText === "合計") {
         return gameController.getTodayTotal()
     }
+    if (messageText === "最新登録") {
+        return gameController.saveLatestRecord()
+    }
     return ""
 }
 
 function test() {
-    const ms = "合計"
-    console.log(route(ms))
+    route("最新登録")
 }
