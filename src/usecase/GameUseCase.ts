@@ -1,4 +1,4 @@
-import {Game, GameDate, GameRepository} from "../domain/Game";
+import {Game, GameDate, GameRepository, Games} from "../domain/Game";
 import Date = GoogleAppsScript.Base.Date;
 import {Score, Scores} from "../domain/Score";
 import {PlayerRepository} from "../domain/Player";
@@ -12,21 +12,26 @@ export class GameUseCase {
 
     saveGame(input: SaveGameInput) {
         const now = new Date()
-        const existGames = this.gameRepository.fetchByDateExcludeScore(now)
+        const existGames = this.gameRepository.fetchByDate(now)
 
-        const scores = new Scores(
+        const newScores = new Scores(
             input.scores.map(s => {
                 const nickName = s.nickName
                 const rank = this.getRank(input.scores.map(s => s.score), s.score)
                 return Score.create({nickName, score: s.score, rank})
             })
         )
+        const latest3Scores = this.generateFlatScores(existGames).slice(-3)
+        if (JSON.stringify(latest3Scores) === JSON.stringify(newScores.values)) {
+            throw Error("すでに登録されている記録です")
+        }
+        console.log("huga")
         const currentIndex = existGames.getCurrentIndex()
         const gameIndex = currentIndex > 0 ? currentIndex + 1 : 1
         const newGame = Game.create({
             gameDate: now,
             gameIndex,
-            scores
+            scores: newScores,
         })
 
         this.gameRepository.save(newGame)
@@ -34,9 +39,7 @@ export class GameUseCase {
 
     getTodayTotal(): GetTodayTotalOutput {
         const games = this.gameRepository.fetchByDate(new Date())
-        const flatScores = games.values.map(g => g.scores.values).reduce((acc, curr) => {
-            return acc.concat(curr)
-        }, [])
+        const flatScores = this.generateFlatScores(games)
         const nickNames = flatScores
             .map(s => s.nickName)
             .reduce((acc, curr) => acc.indexOf(curr) !== -1 ? acc : [...acc, curr], [] as string[])
@@ -51,6 +54,12 @@ export class GameUseCase {
         return {
             values: groupByNickName
         }
+    }
+
+    private generateFlatScores(games: Games) {
+        return games.values.map(g => g.scores.values).reduce((acc, curr) => {
+            return acc.concat(curr)
+        }, [])
     }
 
     getLatestRecord() {

@@ -59,6 +59,21 @@ export class SpreadSheetDriver {
             }
         })
     }
+
+    fetchLatestThree(): ScoreRecord[] {
+        const sheet = this.activeSheet.getSheetByName("score")
+        const lastRow = sheet.getLastRow()
+        const values = sheet.getRange(`a${lastRow - 2}:d${lastRow}`).getValues()
+        if (values.length === 0) return []
+        return values.map(v => {
+            return {
+                game_id: v[0],
+                nick_name: v[1],
+                score: v[2],
+                rank: v[3]
+            }
+        })
+    }
 }
 
 type GameRecord = {

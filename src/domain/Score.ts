@@ -19,3 +19,7 @@ export class Scores {
     constructor(readonly values: Score[]) {
     }
 }
+
+export interface ScoreRepository {
+    fetchLatestThree(): Scores
+}

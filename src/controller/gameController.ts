@@ -22,7 +22,11 @@ export class GameController {
         const text = this.useCase.getLatestRecord()
         const replace = text.replace(/<\/?span[^>]*>/g, '');
         const input: SaveGameInput = parseMessage(replace)
-        this.useCase.saveGame(input)
+        try {
+            this.useCase.saveGame(input)
+        } catch (e) {
+            return e.message
+        }
         return replace.replace(/\s+/g, '') + "\nを登録しました。"
     }
 }

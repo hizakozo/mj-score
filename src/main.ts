@@ -64,5 +64,5 @@ const route = (messageText: string): string => {
 }
 
 function test() {
-    route("最新登録")
+    console.log(route("最新登録"))
 }
