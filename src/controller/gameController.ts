@@ -7,7 +7,7 @@ export class GameController {
     }
 
     save(messageText: string) {
-        this.useCase.saveGame(messageText)
+        return this.useCase.saveGame(messageText).replace(/\s+/g, '') + "\nを登録しました。"
     }
     getTodayTotal() {
         const output = this.useCase.getTodayTotal()

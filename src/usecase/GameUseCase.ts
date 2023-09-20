@@ -15,8 +15,7 @@ export class GameUseCase {
     }
 
     saveGame(message: string) {
-        const input = this.parseMessage(message)
-        this.saveRecord(input)
+        return this.saveRecord(message)
     }
 
     getTodayTotal(): GetTodayTotalOutput {
@@ -46,14 +45,18 @@ export class GameUseCase {
 
     saveLatestRecord(): string {
         const record = this.httpDriver.getLatestRecord()
-        const input = this.parseMessage(record)
+        return this.saveRecord(record)
+    }
+
+    private saveRecord(message: string) {
+        const input = this.parseMessage(message)
         const saveRecordProps: SaveRecordProps = {
             max: input.scores.filter(s => s.nickName === "MAX")[0].score,
             take: input.scores.filter(s => s.nickName === "タケウチ")[0].score,
             littleTooth: input.scores.filter(s => s.nickName === "little.tooth")[0].score
         }
         this.spreadSheetDriver.saveLatestRecord(saveRecordProps)
-        return record
+        return message
     }
 
     private getRank(numbers: number[], currentNumber: number): number | null  {
@@ -76,32 +79,6 @@ export class GameUseCase {
 
         return { scores };
     };
-
-    private saveRecord(input: SaveGameInput) {
-        const now = new Date()
-        const existGames = this.gameRepository.fetchByDate(now)
-        const newScores = new Scores(
-            input.scores.map(s => {
-                const nickName = s.nickName
-                const rank = this.getRank(input.scores.map(s => s.score), s.score)
-                return Score.create({nickName, score: s.score, rank})
-            })
-        )
-        const latest3Scores = this.generateFlatScores(existGames).slice(-3)
-        if (JSON.stringify(latest3Scores) === JSON.stringify(newScores.values)) {
-            throw Error("すでに登録されている記録です")
-        }
-        console.log("huga")
-        const currentIndex = existGames.getCurrentIndex()
-        const gameIndex = currentIndex > 0 ? currentIndex + 1 : 1
-        const newGame = Game.create({
-            gameDate: now,
-            gameIndex,
-            scores: newScores,
-        })
-
-        this.gameRepository.save(newGame)
-    }
 }
 
 export type SaveGameInput = {

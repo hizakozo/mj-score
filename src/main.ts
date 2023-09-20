@@ -6,6 +6,8 @@ import {GameController} from "./controller/gameController";
 import URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
 import {HttpDriver} from "./driver/HttpDriver";
 import {ArchiveSheet} from "./handler/ArchiveSheet";
+import {GetTodayTotal} from "./handler/GetTodayTotal";
+import {GetAllScoreTotal} from "./handler/GetAllScoreTotal";
 
 type OnEditEvent = GoogleAppsScript.Events.SheetsOnEdit;
 
@@ -50,6 +52,9 @@ const route = (messageText: string): string => {
     const saveGameUseCase = new GameUseCase(gameRepository, playerRepository, new HttpDriver(), new SpreadSheetDriver(activeSheet))
     const gameController = new GameController(saveGameUseCase)
     const archiveSheet = new ArchiveSheet(activeSheet)
+    const getTodayTotal = new GetTodayTotal(activeSheet)
+    const getAllScoreTotal = new GetAllScoreTotal(activeSheet)
+
     const containsAll = (targetString: string, substrings: string[]): boolean => {
         return substrings.every(sub => targetString.indexOf(sub) !== -1);
     }
@@ -58,17 +63,21 @@ const route = (messageText: string): string => {
         return "登録完了"
     }
     if (messageText === "合計") {
-        return gameController.getTodayTotal()
+        return getTodayTotal.run()
+    }
+    if (messageText === "集計") {
+        return getAllScoreTotal.run()
     }
     if (messageText === "最新登録") {
         return gameController.saveLatestRecord()
     }
     if (messageText === "記録リセット") {
-        return archiveSheet.run()
+        archiveSheet.run()
+        return "記録をリセットしました"
     }
-    return "記録をリセットしました"
+    return ""
 }
 
 function test() {
-    console.log(route("記録リセット"))
+    console.log(route("1位『little.tooth』 (+87) 2位『タケウチ』 (-20) 3位『MAX』 (-67)"))
 }

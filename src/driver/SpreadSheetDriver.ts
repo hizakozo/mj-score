@@ -76,7 +76,7 @@ export class SpreadSheetDriver {
     }
     saveLatestRecord({max, take, littleTooth}: SaveRecordProps) {
         const START_ROW = 3
-        const sheet = this.activeSheet.getSheetByName("currentScores")
+        const sheet = this.activeSheet.getSheetByName("scores-current")
         const targetRow = sheet.getLastRow() + 1
         sheet.getRange(`a${targetRow}`).setValue(targetRow - START_ROW + 1)
         sheet.getRange(`b${targetRow}`).setValue(max)
