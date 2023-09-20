@@ -74,8 +74,21 @@ export class SpreadSheetDriver {
             }
         })
     }
+    saveLatestRecord({max, take, littleTooth}: SaveRecordProps) {
+        const START_ROW = 3
+        const sheet = this.activeSheet.getSheetByName("currentScores")
+        const targetRow = sheet.getLastRow() + 1
+        sheet.getRange(`a${targetRow}`).setValue(targetRow - START_ROW + 1)
+        sheet.getRange(`b${targetRow}`).setValue(max)
+        sheet.getRange(`c${targetRow}`).setValue(take)
+        sheet.getRange(`d${targetRow}`).setValue(littleTooth)
+    }
 }
-
+type SaveRecordProps = {
+    max: number,
+    take: number,
+    littleTooth: number
+}
 type GameRecord = {
     game_id: string, game_date: Date, game_index: string
 }

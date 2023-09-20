@@ -4,6 +4,8 @@ import {GameUseCase} from "./usecase/GameUseCase";
 import {PlayerRepositoryImpl} from "./repository/PlayerRepositoryImpl";
 import {GameController} from "./controller/gameController";
 import URLFetchRequestOptions = GoogleAppsScript.URL_Fetch.URLFetchRequestOptions;
+import {HttpDriver} from "./driver/HttpDriver";
+import {ArchiveSheet} from "./handler/ArchiveSheet";
 
 type OnEditEvent = GoogleAppsScript.Events.SheetsOnEdit;
 
@@ -45,8 +47,9 @@ const route = (messageText: string): string => {
     const activeSheet = SpreadsheetApp.getActiveSpreadsheet()
     const gameRepository = new GameRepositoryImpl(new SpreadSheetDriver(activeSheet))
     const playerRepository = new PlayerRepositoryImpl(new SpreadSheetDriver(activeSheet))
-    const saveGameUseCase = new GameUseCase(gameRepository, playerRepository)
+    const saveGameUseCase = new GameUseCase(gameRepository, playerRepository, new HttpDriver(), new SpreadSheetDriver(activeSheet))
     const gameController = new GameController(saveGameUseCase)
+    const archiveSheet = new ArchiveSheet(activeSheet)
     const containsAll = (targetString: string, substrings: string[]): boolean => {
         return substrings.every(sub => targetString.indexOf(sub) !== -1);
     }
@@ -60,9 +63,12 @@ const route = (messageText: string): string => {
     if (messageText === "最新登録") {
         return gameController.saveLatestRecord()
     }
-    return ""
+    if (messageText === "記録リセット") {
+        return archiveSheet.run()
+    }
+    return "記録をリセットしました"
 }
 
 function test() {
-    console.log(route("最新登録"))
+    console.log(route("記録リセット"))
 }

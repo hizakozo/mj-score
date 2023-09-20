@@ -2,39 +2,21 @@ import {Game, GameDate, GameRepository, Games} from "../domain/Game";
 import Date = GoogleAppsScript.Base.Date;
 import {Score, Scores} from "../domain/Score";
 import {PlayerRepository} from "../domain/Player";
+import {HttpDriver} from "../driver/HttpDriver";
+import {SpreadSheetDriver} from "../driver/SpreadSheetDriver";
 
 export class GameUseCase {
     constructor(
         readonly gameRepository: GameRepository,
-        readonly playerRepository: PlayerRepository
+        readonly playerRepository: PlayerRepository,
+        readonly httpDriver: HttpDriver,
+        readonly spreadSheetDriver: SpreadSheetDriver
     ) {
     }
 
-    saveGame(input: SaveGameInput) {
-        const now = new Date()
-        const existGames = this.gameRepository.fetchByDate(now)
-
-        const newScores = new Scores(
-            input.scores.map(s => {
-                const nickName = s.nickName
-                const rank = this.getRank(input.scores.map(s => s.score), s.score)
-                return Score.create({nickName, score: s.score, rank})
-            })
-        )
-        const latest3Scores = this.generateFlatScores(existGames).slice(-3)
-        if (JSON.stringify(latest3Scores) === JSON.stringify(newScores.values)) {
-            throw Error("すでに登録されている記録です")
-        }
-        console.log("huga")
-        const currentIndex = existGames.getCurrentIndex()
-        const gameIndex = currentIndex > 0 ? currentIndex + 1 : 1
-        const newGame = Game.create({
-            gameDate: now,
-            gameIndex,
-            scores: newScores,
-        })
-
-        this.gameRepository.save(newGame)
+    saveGame(message: string) {
+        const input = this.parseMessage(message)
+        this.saveRecord(input)
     }
 
     getTodayTotal(): GetTodayTotalOutput {
@@ -62,31 +44,63 @@ export class GameUseCase {
         }, [])
     }
 
-    getLatestRecord() {
-        const MJM_ID = PropertiesService.getScriptProperties().getProperty("MJM_ID");
-        const PASSWORD = PropertiesService.getScriptProperties().getProperty("PASSWORD");
-        const cookie = UrlFetchApp.fetch( "https://pl.sega-mj.com/players/MjmidLogin", {
-            method: "post",
-            payload: `mjm_id=${MJM_ID}&password=${PASSWORD}&platform=2`,
-            contentType: "application/x-www-form-urlencoded; charset=UTF-8",
-        }).getHeaders()["Set-Cookie"]
-        const historyRes = UrlFetchApp.fetch("https://pl.sega-mj.com/playdata_view/showHistory",
-            {
-                method: "get",
-                headers: {
-                    "Cookie": cookie
-                }
-            })
-        const html = historyRes.getContentText();
-        const parse = Parser.data(html)
-        const text: string = parse.from('<div class="body">').to('</div>').build()
-        return text
+    saveLatestRecord(): string {
+        const record = this.httpDriver.getLatestRecord()
+        const input = this.parseMessage(record)
+        const saveRecordProps: SaveRecordProps = {
+            max: input.scores.filter(s => s.nickName === "MAX")[0].score,
+            take: input.scores.filter(s => s.nickName === "タケウチ")[0].score,
+            littleTooth: input.scores.filter(s => s.nickName === "little.tooth")[0].score
+        }
+        this.spreadSheetDriver.saveLatestRecord(saveRecordProps)
+        return record
     }
 
     private getRank(numbers: number[], currentNumber: number): number | null  {
         const uniqueSortedNumbers = numbers.sort((a, b) => b - a);
         const rank = uniqueSortedNumbers.indexOf(currentNumber);
         return rank !== -1 ? rank + 1 : null;
+    }
+    private parseMessage (message: string): SaveGameInput {
+        const replacedMessage = message.replace(/\s+/g, '')
+        const scorePattern = /『(.*?)』\(([-+]?[\d.]+)\)/g;
+        const scores: SaveGameInput["scores"] = [];
+
+        let match: RegExpExecArray | null;
+        while (match = scorePattern.exec(replacedMessage)) {
+            scores.push({
+                nickName: match[1],
+                score: parseFloat(match[2])
+            });
+        }
+
+        return { scores };
+    };
+
+    private saveRecord(input: SaveGameInput) {
+        const now = new Date()
+        const existGames = this.gameRepository.fetchByDate(now)
+        const newScores = new Scores(
+            input.scores.map(s => {
+                const nickName = s.nickName
+                const rank = this.getRank(input.scores.map(s => s.score), s.score)
+                return Score.create({nickName, score: s.score, rank})
+            })
+        )
+        const latest3Scores = this.generateFlatScores(existGames).slice(-3)
+        if (JSON.stringify(latest3Scores) === JSON.stringify(newScores.values)) {
+            throw Error("すでに登録されている記録です")
+        }
+        console.log("huga")
+        const currentIndex = existGames.getCurrentIndex()
+        const gameIndex = currentIndex > 0 ? currentIndex + 1 : 1
+        const newGame = Game.create({
+            gameDate: now,
+            gameIndex,
+            scores: newScores,
+        })
+
+        this.gameRepository.save(newGame)
     }
 }
 
@@ -100,6 +114,8 @@ export type GetTodayTotalOutput = {
     values: {nickName: string, totalScore: number}[]
 }
 
-declare class Parser {
-    public static data(html: string)
+type SaveRecordProps = {
+    max: number,
+    take: number,
+    littleTooth: number
 }
