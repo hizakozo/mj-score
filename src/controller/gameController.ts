@@ -25,4 +25,12 @@ export class GameController {
             return e.message
         }
     }
+
+    saveBonus({userName, bonus}: {userName: string, bonus: number}) {
+        try {
+            return this.useCase.saveBonus(userName, bonus)
+        } catch (e) {
+            return e.message
+        }
+    }
 }

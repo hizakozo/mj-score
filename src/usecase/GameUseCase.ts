@@ -13,7 +13,6 @@ export class GameUseCase {
         readonly spreadSheetDriver: SpreadSheetDriver
     ) {
     }
-
     saveGame(message: string) {
         return this.saveRecord(message)
     }
@@ -46,6 +45,23 @@ export class GameUseCase {
     saveLatestRecord(): string {
         const record = this.httpDriver.getLatestRecord()
         return this.saveRecord(record)
+    }
+
+    saveBonus(userName: string, bonus: number): string {
+        const userNames = ["明石", "竹内", "安居"]
+        if (userNames.filter(u => u === userName).length === 0) {
+            throw Error(`not found active user -> [${userName}]`)
+        }
+        const saveRecordProps = {
+            max: userName === userNames[0] ? bonus : -(bonus / 2),
+            take: userName === userNames[1] ? bonus : -(bonus / 2),
+            littleTooth: userName === userNames[2] ? bonus : -(bonus / 2),
+        }
+        if (saveRecordProps.max + saveRecordProps.take + saveRecordProps.littleTooth !== 0) {
+            throw Error("invalid saving score")
+        }
+        this.spreadSheetDriver.saveLatestRecord(saveRecordProps)
+        return `${userName}に${bonus}点追加その他プレーヤーは${-(bonus / 2)}`
     }
 
     private saveRecord(message: string) {

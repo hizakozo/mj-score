@@ -75,6 +75,12 @@ const route = (messageText: string): string => {
         archiveSheet.run()
         return "記録をリセットしました"
     }
+    if (containsAll(messageText, ["役満祝儀:"])) {
+        const split = messageText.split(":")
+        const userName = split[1]
+        const bonus = split.length === 3 ? parseInt(messageText.split(":")[2]) : 100
+        return gameController.saveBonus({userName, bonus})
+    }
     return ""
 }
 
