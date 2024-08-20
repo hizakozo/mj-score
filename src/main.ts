@@ -75,6 +75,9 @@ const route = (messageText: string): string => {
         archiveSheet.run()
         return "記録をリセットしました"
     }
+    if (messageText.indexOf("おめでとう") >= 0) {
+        return "おめでとう！🎉"
+    }
     if (containsAll(messageText, ["役満祝儀:"])) {
         const split = messageText.split(":")
         const userName = split[1]
